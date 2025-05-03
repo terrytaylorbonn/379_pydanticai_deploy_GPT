@@ -1,26 +1,39 @@
 # mcp_client/main_c.py
 
 import os
+import json
 import requests
 from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
 app = FastAPI()
 
-# MCP Context schema (input)
+# === CONFIG LOADING ===
+def load_mcp_config():
+    try:
+        with open("mcp_config.json", "r") as f:
+            config = json.load(f)
+            print(f"Loaded MCP config: {config}") ########
+            return config.get("mcp_server_url", "http://127.0.0.1:8001")
+    except Exception:
+        return "http://127.0.0.1:8001"
+
+MCP_SERVER_URL = load_mcp_config()
+
+# === SCHEMAS ===
+
 class QuestionContext(BaseModel):
     country: str = Field(..., description="Country name to ask about")
 
-# MCP Output schema
 class AnswerOutput(BaseModel):
     answer: str = Field(..., description="Answer to user question")
 
-# Set MCP server URL (you'll update this when deployed)
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8001")
-
 @app.get("/")
 def root():
-    return {"message": "MCP Client — Calls MCP Server"}
+    return {
+        "message": "MCP Client — Calls MCP Server",
+        "mcp_server_url": MCP_SERVER_URL
+    }
 
 @app.get("/ask")
 def ask(country: str = Query(..., description="Country to ask about")):
